@@ -425,6 +425,8 @@ private:
 
         int choice;
         std::cin >> choice;
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
         if (choice == 1) display_priority_list();
         else display_regular_list();
 
