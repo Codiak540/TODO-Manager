@@ -1,50 +1,29 @@
-# This is an example PKGBUILD file. Use this as a start to creating your own,
-# and remove these comments. For more information, see 'man PKGBUILD'.
-# NOTE: Please fill out the license field for your package! If it is unknown,
-# then please put 'unknown'.
-
 # Maintainer: Your Name <youremail@domain.com>
 pkgname=todo-bbs
 pkgver=1.0.0
 pkgrel=1
-epoch=
 pkgdesc="A Retro-Styled Terminal TODO Manager"
-arch=('x86_64' 'i686' 'aarch64')
+arch=('x86_64' 'aarch64') # i686 is rare these days, but keep if you prefer
 url="https://github.com/Codiak540/TODO-Manager"
-license=('GPL')
-groups=()
+license=('GPL3') # Update this to match your actual license version
 depends=('gcc-libs')
-makedepends=('cmake' 'gcc')
-checkdepends=()
-optdepends=()
-provides=()
-conflicts=()
-replaces=()
-backup=()
-options=()
-install=
-changelog=
-source=($pkgname-$pkgver.tar.gz)
-noextract=()
-md5sums=sha256sums=('SKIP')
-
-prepare() {
-	cd "$srcdir/$pkgname-$pkgver"
-	patch -p1 -i "$srcdir/$pkgname-$pkgver.patch"
-}
+makedepends=('cmake')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/V$pkgver.tar.gz")
+# Run 'updpkgsums' to replace the 'SKIP' with a real hash
+sha256sums=('8cc809b9fe2424449e157545ea5958798b5cadf77f6953cbe9e9f3a806f3b943')
 
 build() {
-	cd "$srcdir/$pkgname-$pkgver"
-	cmake ..
-	make
-}
+    # It's cleaner to create a build directory
+    cmake -B build -S "TODO-Manager-$pkgver" \
+        -DCMAKE_BUILD_TYPE=None \
+        -DCMAKE_INSTALL_PREFIX=/usr
 
-check() {
-	cd "$srcdir/$pkgname-$pkgver"
-	make -k check
+    cmake --build build
 }
 
 package() {
-	cd "$srcdir/$pkgname-$pkgver"
-	make DESTDIR="$pkgdir/" install
+    DESTDIR="$pkgdir" cmake --install build
+
+    # Install the license file (mandatory if it's not a common system license)
+    install -Dm644 "TODO-Manager-$pkgver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
