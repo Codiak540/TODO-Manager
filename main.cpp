@@ -4,13 +4,13 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <map>
 #include <limits>
 #include <cstdlib>
 #include <thread>
 
 #include "colors.h"
 #include "boxes.h"
+#define VERSION "v1.1.0"
 
 struct TodoItem {
     std::string description;
@@ -38,7 +38,7 @@ private:
     }
 
     void draw_header() const {
-        std::cout << boxes::box("", {"░▒▓ TODO-BBS v1.1.0 ▓▒░", "A Retro styled Todo Manager"}, CYAN BOLD, CYAN BOLD);
+        std::cout << boxes::box("", {"░▒▓ TODO-BBS " + std::string(VERSION) + " ▓▒░", "A Retro styled Todo Manager"}, CYAN BOLD, CYAN BOLD);
 
         // Show modification status
         if (has_changes) {
@@ -520,7 +520,8 @@ std::string get_home_directory() {
 std::pair<std::string, std::string> select_file_paths() {
     std::cout << CYAN << BOLD;
     std::cout << "\n╔════════════════════════════════════════════════════════════════════╗\n";
-    std::cout << "║              ░▒▓ TODO-BBS v1.1.0 ▓▒░                               ║\n";
+    std::cout << "║              ░▒▓ TODO-BBS " + std::string(VERSION) + " ▓▒░                               ║\n";
+
     std::cout << "║              Your Retro Task Manager                               ║\n";
     std::cout << "╚════════════════════════════════════════════════════════════════════╝\n";
     std::cout << RESET << "\n";
