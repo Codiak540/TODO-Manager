@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(TODO_Manager VERSION 1.0.0)
+project(todo-bbs VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,10 +11,10 @@ set(SOURCES
 )
 
 # Executable
-add_executable(TODO_Manager ${SOURCES})
+add_executable(todo-bbs ${SOURCES})
 
 # Installation
-install(TARGETS TODO_Manager
+install(TARGETS todo-bbs
         RUNTIME DESTINATION bin
         COMPONENT runtime
 )

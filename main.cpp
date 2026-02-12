@@ -17,7 +17,7 @@ struct TodoItem {
     int priority;  // -1 for non-priority items
     bool is_priority;
 
-    TodoItem(std::string  desc, bool is_pri = false, int pri = -1)
+    explicit TodoItem(std::string  desc, const bool is_pri = false, const int pri = -1)
         : description(std::move(desc)), priority(pri), is_priority(is_pri) {}
 };
 
@@ -68,16 +68,16 @@ private:
                 if (pos != std::string::npos) {
                     int pri = std::stoi(line.substr(0, pos));
                     std::string desc = line.substr(pos + 1);
-                    list.push_back(TodoItem(desc, true, pri));
+                    list.emplace_back(desc, true, pri);
                 }
             } else {
-                list.push_back(TodoItem(line, false));
+                list.emplace_back(line, false);
             }
         }
         file.close();
     }
 
-    static void save_to_file(const std::string& filename, const std::vector<TodoItem>& list, bool is_priority) {
+    static void save_to_file(const std::string& filename, const std::vector<TodoItem>& list, const bool is_priority) {
         std::ofstream file(filename);
         if (!file.is_open()) {
             std::cout << RED << "  [ERROR] Could not save to file: " << filename << RESET << "\n";
@@ -104,7 +104,7 @@ private:
         std::vector<std::string> toDisp;
 
         if (sorted.empty()) {
-            toDisp.push_back("(empty)");
+            toDisp.emplace_back("(empty)");
         } else {
             for (const auto& item : sorted) {
                 toDisp.push_back("[" + std::to_string(item.priority) + "] " + item.description);
@@ -119,7 +119,7 @@ private:
         std::vector<std::string> toDisp;
 
         if (regular_list.empty()) {
-            toDisp.push_back("(empty)");
+            toDisp.emplace_back("(empty)");
         } else {
             for (const auto& item : regular_list) {
                 toDisp.push_back("• " + item.description);
@@ -129,9 +129,9 @@ private:
         std::cout << boxes::indent(boxes::box("REGULAR TODO LIST", toDisp, CYAN, GREEN BOLD), "  ");
     }
 
-    int find_priority_index(int priority) const
+    int find_priority_index(const int priority) const
     {
-        for (size_t i = 0; i < priority_list.size(); i++) {
+        for (int i = 0; i < priority_list.size(); i++) {
             if (priority_list[i].priority == priority) {
                 return i;
             }
@@ -139,7 +139,7 @@ private:
         return -1;
     }
 
-    void bump_priorities_down(int starting_priority) {
+    void bump_priorities_down(const int starting_priority) {
         for (auto& item : priority_list) {
             if (item.priority >= starting_priority) {
                 item.priority++;
@@ -164,7 +164,7 @@ private:
 
         if (choice == 1) {
             bump_priorities_down(new_priority);
-            priority_list.push_back(TodoItem(new_desc, true, new_priority));
+            priority_list.emplace_back(new_desc, true, new_priority);
             has_changes = true;
             std::cout << GREEN << "\n  [✓] Item added, priorities bumped down" << RESET << "\n";
         } else if (choice == 2) {
@@ -189,7 +189,7 @@ private:
             [](const TodoItem* a, const TodoItem* b) { return a->priority < b->priority; });
 
         std::cout << "  Items that need reassignment:\n\n";
-        for (auto* item : conflicting) {
+        for (const auto* item : conflicting) {
             std::cout << "  [" << item->priority << "] " << item->description << "\n";
         }
 
@@ -218,7 +218,7 @@ private:
             item->priority = new_pri;
         }
 
-        priority_list.push_back(TodoItem(new_desc, true, new_priority));
+        priority_list.emplace_back(new_desc, true, new_priority);
         has_changes = true;
         std::cout << GREEN << "\n  [✓] Items reassigned successfully" << RESET << "\n";
     }
@@ -256,7 +256,7 @@ private:
             if (find_priority_index(priority) != -1) {
                 handle_priority_conflict(desc, priority);
             } else {
-                priority_list.push_back(TodoItem(desc, true, priority));
+                priority_list.emplace_back(desc, true, priority);
                 has_changes = true;
                 std::cout << GREEN << "\n  [✓] Priority item added" << RESET << "\n";
             }
@@ -272,7 +272,7 @@ private:
                 return;
             }
 
-            regular_list.push_back(TodoItem(desc, false));
+            regular_list.emplace_back(desc, false);
             has_changes = true;
             std::cout << GREEN << "\n  [✓] Regular item added" << RESET << "\n";
         }
@@ -317,7 +317,7 @@ private:
             std::cin >> priority;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-            int idx = find_priority_index(priority);
+            const int idx = find_priority_index(priority);
             if (idx == -1) {
                 std::cout << RED << "\n  [✗] Priority not found" << RESET << "\n";
                 pause();
@@ -454,8 +454,8 @@ private:
     }
 
 public:
-    TodoBBS(const std::string& pri_file, const std::string& reg_file)
-        : priority_file(pri_file), regular_file(reg_file), has_changes(false) {
+    TodoBBS(std::string  pri_file, std::string  reg_file)
+        : priority_file(std::move(pri_file)), regular_file(std::move(reg_file)), has_changes(false) {
         load_from_file(priority_file, priority_list, true);
         load_from_file(regular_file, regular_list, false);
     }
@@ -521,7 +521,6 @@ std::pair<std::string, std::string> select_file_paths() {
     std::cout << CYAN << BOLD;
     std::cout << "\n╔════════════════════════════════════════════════════════════════════╗\n";
     std::cout << "║              ░▒▓ TODO-BBS " + std::string(VERSION) + " ▓▒░                               ║\n";
-
     std::cout << "║              Your Retro Task Manager                               ║\n";
     std::cout << "╚════════════════════════════════════════════════════════════════════╝\n";
     std::cout << RESET << "\n";
@@ -538,8 +537,8 @@ std::pair<std::string, std::string> select_file_paths() {
     std::string priority_file, regular_file;
     
     if (choice == 2) {
-        std::string home = get_home_directory();
-        std::string todo_dir = home + "/Documents/todo";
+        const std::string home = get_home_directory();
+        const std::string todo_dir = home + "/Documents/todo";
         
         // Create directory if it doesn't exist
         #ifdef _WIN32
@@ -566,7 +565,7 @@ std::pair<std::string, std::string> select_file_paths() {
 }
 
 int main() {
-    std::pair<std::string, std::string> file_paths = select_file_paths();
+    const std::pair<std::string, std::string> file_paths = select_file_paths();
     
     TodoBBS app(file_paths.first, file_paths.second);
     app.run();

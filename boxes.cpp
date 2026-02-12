@@ -4,13 +4,13 @@
 #include <algorithm>
 
 // Helper function to calculate the visible length of a string (excluding ANSI codes)
-// Properly handles UTF-8 multi-byte characters
+// Properly handles UTF-8 multibyte characters
 size_t visible_length(const std::string& str) {
     size_t len = 0;
     bool in_escape = false;
 
     for (size_t i = 0; i < str.length(); ) {
-        unsigned char c = str[i];
+        const unsigned char c = str[i];
 
         // Check for ANSI escape sequence
         if (c == '\033') {
@@ -60,13 +60,13 @@ u_long boxes::padding(const u_long length, const u_long size) {
     return (size - length + PADDING) / 2;
 }
 
-std::string boxes::box(std::string header, const std::vector<std::string>& contents, const std::string& bodyColor, const std::string barColor)
+std::string boxes::box(std::string header, const std::vector<std::string>& contents, const std::string& bodyColor, const std::string& barColor)
 {
     if (!header.empty()) header = " " + header + " ";
 
     u_long max_len = 0;
     for (const auto& line : contents) {
-        u_long line_len = visible_length(line);
+        const u_long line_len = visible_length(line);
         if (line_len > max_len) max_len = line_len;
     }
 
@@ -76,7 +76,7 @@ std::string boxes::box(std::string header, const std::vector<std::string>& conte
     // Ensure minimum header padding if we have a header
     u_long actual_width = total_inner_width;
     if (!header.empty()) {
-        const u_long min_header_pad = 3;
+        constexpr u_long min_header_pad = 3;
         const u_long min_width_for_header = visible_length(header) + (min_header_pad * 2);
         if (min_width_for_header > actual_width) {
             actual_width = min_width_for_header;
@@ -101,7 +101,7 @@ std::string boxes::box(std::string header, const std::vector<std::string>& conte
 
     u_long max_len = 0;
     for (const auto& line : contents) {
-        u_long line_len = visible_length(line);
+        const u_long line_len = visible_length(line);
         if (line_len > max_len) max_len = line_len;
     }
 
@@ -111,7 +111,7 @@ std::string boxes::box(std::string header, const std::vector<std::string>& conte
     // Ensure minimum header padding if we have a header
     u_long actual_width = total_inner_width;
     if (!header.empty()) {
-        const u_long min_header_pad = 3;
+        constexpr u_long min_header_pad = 3;
         const u_long min_width_for_header = visible_length(header) + (min_header_pad * 2);
         if (min_width_for_header > actual_width) {
             actual_width = min_width_for_header;
@@ -181,7 +181,7 @@ std::string boxes::indent(const std::string& text, const std::string& prefix) {
     std::string result;
     std::string line;
 
-    for (char c : text) {
+    for (const char c : text) {
         line += c;
         if (c == '\n') {
             result += prefix + line;
