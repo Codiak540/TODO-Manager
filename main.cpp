@@ -7,6 +7,8 @@
 #include <map>
 #include <limits>
 #include <cstdlib>
+#include <thread>
+
 #include "colors.h"
 #include "boxes.h"
 
@@ -412,16 +414,26 @@ private:
         pause();
     }
 
-    void view_lists() const
+    void view_list() const
     {
         clear_screen();
         draw_header();
-        display_priority_list();
-        display_regular_list();
+        std::cout << YELLOW << "  ═══ CHOOSE LIST TO VIEW ═══" << RESET << "\n\n";
+        std::cout << "  [1] Priority List\n";
+        std::cout << "  [2] Regular List\n\n";
+        std::cout << CYAN << "  > Select type: " << RESET;
+
+        int choice;
+        std::cin >> choice;
+        if (choice == 1) display_priority_list();
+        else display_regular_list();
+
         pause();
+        clear_screen();
     }
 
     static void pause() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         std::cout << "\n" << CYAN << "  Press ENTER to continue..." << RESET;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
@@ -429,7 +441,7 @@ private:
     void show_menu() const
     {
         draw_separator("=");
-        std::cout << CYAN << "  [1] View TODO Lists\n";
+        std::cout << CYAN << "  [1] View TODO List\n";
         std::cout << "  [2] Add Item\n";
         std::cout << "  [3] Remove Item\n";
         std::cout << "  [4] " << (has_changes ? YELLOW + std::string("[*] ") + CYAN : "")
@@ -460,7 +472,7 @@ public:
             
             switch (choice) {
                 case 1:
-                    view_lists();
+                    view_list();
                     break;
                 case 2:
                     add_item();

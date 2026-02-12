@@ -1,15 +1,14 @@
-# Maintainer: Your Name <youremail@domain.com>
+# Maintainer: Codiak 540<Codiak540@bbs.4d2.org>
 pkgname=todo-bbs
-pkgver=1.0.0
+pkgver=1.0.1
 pkgrel=1
 pkgdesc="A Retro-Styled Terminal TODO Manager"
-arch=('x86_64' 'aarch64') # i686 is rare these days, but keep if you prefer
+arch=('x86_64' 'i686' 'aarch64')
 url="https://github.com/Codiak540/TODO-Manager"
-license=('GPL3') # Update this to match your actual license version
+license=('GPL')
 depends=('gcc-libs')
 makedepends=('cmake')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/V$pkgver.tar.gz")
-# Run 'updpkgsums' to replace the 'SKIP' with a real hash
 sha256sums=('8cc809b9fe2424449e157545ea5958798b5cadf77f6953cbe9e9f3a806f3b943')
 
 build() {
