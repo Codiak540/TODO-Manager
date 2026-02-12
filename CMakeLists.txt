@@ -4,4 +4,6 @@ project(TODO_Manager)
 set(CMAKE_CXX_STANDARD 11)
 
 add_executable(TODO_Manager
-        main.cpp)
+        main.cpp
+        boxes.cpp
+        boxes.cpp)

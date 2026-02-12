@@ -1,31 +1,22 @@
 #include <iostream>
 #include <fstream>
+#include <utility>
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <map>
-#include <sstream>
 #include <limits>
-#include <ctime>
 #include <cstdlib>
-
-// ANSI color codes for BBS-style interface
-#define RESET "\033[0m"
-#define BOLD "\033[1m"
-#define CYAN "\033[36m"
-#define YELLOW "\033[33m"
-#define GREEN "\033[32m"
-#define RED "\033[31m"
-#define BLUE "\033[34m"
-#define MAGENTA "\033[35m"
+#include "colors.h"
+#include "boxes.h"
 
 struct TodoItem {
     std::string description;
     int priority;  // -1 for non-priority items
     bool is_priority;
-    
-    TodoItem(const std::string& desc, bool is_pri = false, int pri = -1)
-        : description(desc), priority(pri), is_priority(is_pri) {}
+
+    TodoItem(std::string  desc, bool is_pri = false, int pri = -1)
+        : description(std::move(desc)), priority(pri), is_priority(is_pri) {}
 };
 
 class TodoBBS {
@@ -36,7 +27,7 @@ private:
     std::string regular_file;
     bool has_changes;
 
-    void clear_screen() {
+    static void clear_screen() {
         #ifdef _WIN32
             system("cls");
         #else
@@ -44,14 +35,9 @@ private:
         #endif
     }
 
-    void draw_header() {
-        std::cout << CYAN << BOLD;
-        std::cout << "╔════════════════════════════════════════════════════════════════════╗\n";
-        std::cout << "║              ░▒▓ TODO-BBS v1.0 ▓▒░                                 ║\n";
-        std::cout << "║              Your Retro Task Manager                               ║\n";
-        std::cout << "╚════════════════════════════════════════════════════════════════════╝\n";
-        std::cout << RESET;
-        
+    void draw_header() const {
+        std::cout << boxes::box("", {"░▒▓ TODO-BBS v1.0 ▓▒░", "A Retro styled Todo Manager"}, CYAN BOLD, CYAN BOLD);
+
         // Show modification status
         if (has_changes) {
             std::cout << YELLOW << "  [*] UNCOMMITTED CHANGES" << RESET << "\n";
@@ -61,20 +47,20 @@ private:
         std::cout << "\n";
     }
 
-    void draw_separator(const std::string& c = "-") {
+    static void draw_separator(const std::string& c = "-") {
         std::cout << BLUE;
         for (int i = 0; i < 72; i++) std::cout << c;
         std::cout << RESET << "\n";
     }
 
-    void load_from_file(const std::string& filename, std::vector<TodoItem>& list, bool is_priority) {
+    static void load_from_file(const std::string& filename, std::vector<TodoItem>& list, bool is_priority) {
         std::ifstream file(filename);
         if (!file.is_open()) return;
 
         std::string line;
         while (std::getline(file, line)) {
             if (line.empty()) continue;
-            
+
             if (is_priority) {
                 size_t pos = line.find('|');
                 if (pos != std::string::npos) {
@@ -89,7 +75,7 @@ private:
         file.close();
     }
 
-    void save_to_file(const std::string& filename, const std::vector<TodoItem>& list, bool is_priority) {
+    static void save_to_file(const std::string& filename, const std::vector<TodoItem>& list, bool is_priority) {
         std::ofstream file(filename);
         if (!file.is_open()) {
             std::cout << RED << "  [ERROR] Could not save to file: " << filename << RESET << "\n";
@@ -106,39 +92,43 @@ private:
         file.close();
     }
 
-    void display_priority_list() {
-        std::cout << MAGENTA << BOLD << "  ╔═══ PRIORITY TODO LIST ═══╗" << RESET << "\n";
-        
-        if (priority_list.empty()) {
-            std::cout << CYAN << "  │  (empty)                 │" << RESET << "\n";
+    void display_priority_list() const
+    {
+        // Sort by priority
+        std::vector<TodoItem> sorted = priority_list;
+        std::sort(sorted.begin(), sorted.end(),
+            [](const TodoItem& a, const TodoItem& b) { return a.priority < b.priority; });
+
+        std::vector<std::string> toDisp;
+
+        if (sorted.empty()) {
+            toDisp.push_back("(empty)");
         } else {
-            // Sort by priority
-            std::vector<TodoItem> sorted = priority_list;
-            std::sort(sorted.begin(), sorted.end(), 
-                [](const TodoItem& a, const TodoItem& b) { return a.priority < b.priority; });
-            
             for (const auto& item : sorted) {
-                std::cout << YELLOW << "  │ [" << item.priority << "] " 
-                         << RESET << item.description << "\n";
+                toDisp.push_back("[" + std::to_string(item.priority) + "] " + item.description);
             }
         }
-        std::cout << MAGENTA << "  ╚══════════════════════════╝" << RESET << "\n\n";
+
+        std::cout << boxes::indent(boxes::box("PRIORITY TODO LIST", toDisp, CYAN, MAGENTA BOLD), "  ");
     }
 
-    void display_regular_list() {
-        std::cout << GREEN << BOLD << "  ╔═══ REGULAR TODO LIST ═══╗" << RESET << "\n";
-        
+    void display_regular_list() const
+    {
+        std::vector<std::string> toDisp;
+
         if (regular_list.empty()) {
-            std::cout << CYAN << "  │  (empty)                │" << RESET << "\n";
+            toDisp.push_back("(empty)");
         } else {
-            for (size_t i = 0; i < regular_list.size(); i++) {
-                std::cout << GREEN << "  │ • " << RESET << regular_list[i].description << "\n";
+            for (const auto& item : regular_list) {
+                toDisp.push_back("• " + item.description);
             }
         }
-        std::cout << GREEN << "  ╚═════════════════════════╝" << RESET << "\n\n";
+
+        std::cout << boxes::indent(boxes::box("REGULAR TODO LIST", toDisp, CYAN, GREEN BOLD), "  ");
     }
 
-    int find_priority_index(int priority) {
+    int find_priority_index(int priority) const
+    {
         for (size_t i = 0; i < priority_list.size(); i++) {
             if (priority_list[i].priority == priority) {
                 return i;
@@ -157,19 +147,19 @@ private:
 
     void handle_priority_conflict(const std::string& new_desc, int new_priority) {
         std::cout << RED << "\n  [!] Priority " << new_priority << " already exists!" << RESET << "\n";
-        std::cout << "      Current item: " << CYAN 
-                  << priority_list[find_priority_index(new_priority)].description 
+        std::cout << "      Current item: " << CYAN
+                  << priority_list[find_priority_index(new_priority)].description
                   << RESET << "\n\n";
-        
+
         std::cout << "  [1] Bump - Auto-reassign all conflicting priorities down\n";
         std::cout << "  [2] Reassign - Manually reassign priorities\n";
         std::cout << "  [3] Cancel\n\n";
         std::cout << YELLOW << "  > Select option: " << RESET;
-        
+
         int choice;
         std::cin >> choice;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        
+
         if (choice == 1) {
             bump_priorities_down(new_priority);
             priority_list.push_back(TodoItem(new_desc, true, new_priority));
@@ -184,7 +174,7 @@ private:
 
     void manual_reassign(const std::string& new_desc, int new_priority) {
         std::cout << "\n" << YELLOW << "  ═══ MANUAL PRIORITY REASSIGNMENT ═══" << RESET << "\n\n";
-        
+
         // Show all conflicting items
         std::vector<TodoItem*> conflicting;
         for (auto& item : priority_list) {
@@ -192,223 +182,192 @@ private:
                 conflicting.push_back(&item);
             }
         }
-        
+
         std::sort(conflicting.begin(), conflicting.end(),
             [](const TodoItem* a, const TodoItem* b) { return a->priority < b->priority; });
-        
+
         std::cout << "  Items that need reassignment:\n\n";
         for (auto* item : conflicting) {
             std::cout << "  [" << item->priority << "] " << item->description << "\n";
         }
-        
+
         std::cout << "\n  New item:\n";
         std::cout << "  [" << new_priority << "] " << new_desc << "\n\n";
-        
+
         // Reassign each
         for (auto* item : conflicting) {
-            std::cout << CYAN << "  Reassign [" << item->priority << "] " 
+            std::cout << CYAN << "  Reassign [" << item->priority << "] "
                      << item->description << RESET << "\n";
             std::cout << "  New priority: ";
             int new_pri;
             std::cin >> new_pri;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            
-            // Check if this new priority also conflicts
-            while (find_priority_index(new_pri) != -1 && new_pri != new_priority) {
-                std::cout << RED << "  [!] Priority " << new_pri << " is taken. Try again: " << RESET;
-                std::cin >> new_pri;
-                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+            if (new_pri == item->priority) continue;
+
+            // Check if new priority conflicts
+            if (find_priority_index(new_pri) != -1) {
+                std::cout << RED << "  [!] Priority " << new_pri
+                         << " already assigned. Try again." << RESET << "\n";
+                // Re-do this item
+                continue;
             }
-            
+
             item->priority = new_pri;
         }
-        
+
         priority_list.push_back(TodoItem(new_desc, true, new_priority));
         has_changes = true;
-        std::cout << GREEN << "\n  [✓] All priorities reassigned successfully" << RESET << "\n";
+        std::cout << GREEN << "\n  [✓] Items reassigned successfully" << RESET << "\n";
     }
 
     void add_item() {
         clear_screen();
         draw_header();
-        std::cout << YELLOW << "  ═══ ADD NEW ITEM ═══" << RESET << "\n\n";
-        
-        std::cout << "  Item description: ";
-        std::string desc;
-        std::getline(std::cin, desc);
-        
-        if (desc.empty()) {
-            std::cout << RED << "\n  [✗] Description cannot be empty" << RESET << "\n";
-            pause();
-            return;
-        }
-        
-        std::cout << "\n  [1] Priority list\n";
-        std::cout << "  [2] Regular list\n";
-        std::cout << YELLOW << "\n  > Select list: " << RESET;
-        
-        int list_choice;
-        std::cin >> list_choice;
+        std::cout << YELLOW << "  ═══ ADD TODO ITEM ═══" << RESET << "\n\n";
+
+        std::cout << "  [1] Priority Item\n";
+        std::cout << "  [2] Regular Item\n\n";
+        std::cout << CYAN << "  > Select type: " << RESET;
+
+        int type;
+        std::cin >> type;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        
-        if (list_choice == 1) {
-            std::cout << "\n  Enter priority (integer): ";
+
+        if (type == 1) {
+            std::cout << YELLOW << "\n  Enter priority number: " << RESET;
             int priority;
             std::cin >> priority;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            
+
+            std::cout << YELLOW << "  Enter description: " << RESET;
+            std::string desc;
+            std::getline(std::cin, desc);
+
+            if (desc.empty()) {
+                std::cout << RED << "\n  [✗] Description cannot be empty" << RESET << "\n";
+                pause();
+                return;
+            }
+
+            // Check for priority conflicts
             if (find_priority_index(priority) != -1) {
                 handle_priority_conflict(desc, priority);
             } else {
                 priority_list.push_back(TodoItem(desc, true, priority));
                 has_changes = true;
-                std::cout << GREEN << "\n  [✓] Added to priority list" << RESET << "\n";
+                std::cout << GREEN << "\n  [✓] Priority item added" << RESET << "\n";
             }
-        } else if (list_choice == 2) {
+
+        } else if (type == 2) {
+            std::cout << YELLOW << "\n  Enter description: " << RESET;
+            std::string desc;
+            std::getline(std::cin, desc);
+
+            if (desc.empty()) {
+                std::cout << RED << "\n  [✗] Description cannot be empty" << RESET << "\n";
+                pause();
+                return;
+            }
+
             regular_list.push_back(TodoItem(desc, false));
             has_changes = true;
-            std::cout << GREEN << "\n  [✓] Added to regular list" << RESET << "\n";
-        } else {
-            std::cout << RED << "\n  [✗] Invalid choice" << RESET << "\n";
+            std::cout << GREEN << "\n  [✓] Regular item added" << RESET << "\n";
         }
-        
+
         pause();
     }
 
     void remove_item() {
         clear_screen();
         draw_header();
-        std::cout << YELLOW << "  ═══ REMOVE ITEM ═══" << RESET << "\n\n";
-        
-        std::cout << "  [1] Remove from Priority list\n";
-        std::cout << "  [2] Remove from Regular list\n";
-        std::cout << "  [3] Cancel\n";
-        std::cout << YELLOW << "\n  > Select list: " << RESET;
-        
+        std::cout << YELLOW << "  ═══ REMOVE TODO ITEM ═══" << RESET << "\n\n";
+
+        std::cout << "  [1] Priority List\n";
+        std::cout << "  [2] Regular List\n\n";
+        std::cout << CYAN << "  > Select list: " << RESET;
+
         int list_choice;
         std::cin >> list_choice;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        
+
         if (list_choice == 1) {
             if (priority_list.empty()) {
                 std::cout << RED << "\n  [✗] Priority list is empty" << RESET << "\n";
                 pause();
                 return;
             }
-            
+
             clear_screen();
             draw_header();
             std::cout << YELLOW << "  ═══ PRIORITY LIST ═══" << RESET << "\n\n";
-            
-            // Show sorted priority list with indices
-            std::vector<size_t> indices;
+
             std::vector<TodoItem> sorted = priority_list;
-            for (size_t i = 0; i < priority_list.size(); i++) {
-                indices.push_back(i);
+            std::sort(sorted.begin(), sorted.end(),
+                [](const TodoItem& a, const TodoItem& b) { return a.priority < b.priority; });
+
+            for (const auto& item : sorted) {
+                std::cout << "  [" << item.priority << "] " << item.description << "\n";
             }
-            
-            // Sort both vectors together
-            for (size_t i = 0; i < sorted.size() - 1; i++) {
-                for (size_t j = 0; j < sorted.size() - i - 1; j++) {
-                    if (sorted[j].priority > sorted[j + 1].priority) {
-                        std::swap(sorted[j], sorted[j + 1]);
-                        std::swap(indices[j], indices[j + 1]);
-                    }
-                }
-            }
-            
-            for (size_t i = 0; i < sorted.size(); i++) {
-                std::cout << "  [" << (i + 1) << "] Priority " << sorted[i].priority 
-                         << ": " << sorted[i].description << "\n";
-            }
-            
-            std::cout << YELLOW << "\n  > Select item to remove (0 to cancel): " << RESET;
-            int choice;
-            std::cin >> choice;
+
+            std::cout << YELLOW << "\n  > Enter priority to remove (0 to cancel): " << RESET;
+            int priority;
+            std::cin >> priority;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            
-            if (choice < 1 || choice > static_cast<int>(sorted.size())) {
-                std::cout << RED << "\n  [✗] Removal cancelled" << RESET << "\n";
+
+            int idx = find_priority_index(priority);
+            if (idx == -1) {
+                std::cout << RED << "\n  [✗] Priority not found" << RESET << "\n";
                 pause();
                 return;
             }
-            
-            int removed_priority = sorted[choice - 1].priority;
-            size_t original_index = indices[choice - 1];
-            
-            std::cout << RED << "\n  Remove: [" << removed_priority << "] " 
-                     << priority_list[original_index].description << "? (y/n): " << RESET;
+
+            std::cout << RED << "\n  Remove: " << priority_list[idx].description
+                     << "? (y/n): " << RESET;
             char confirm;
             std::cin >> confirm;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            
+
             if (confirm == 'y' || confirm == 'Y') {
-                priority_list.erase(priority_list.begin() + original_index);
-                
-                // Bump everything under it up by one
-                for (auto& item : priority_list) {
-                    if (item.priority > removed_priority) {
-                        item.priority--;
-                    }
-                }
-                
+                priority_list.erase(priority_list.begin() + idx);
                 has_changes = true;
-                std::cout << GREEN << "\n  [✓] Item removed, priorities adjusted" << RESET << "\n";
-                
-                // Check for conflicts after bumping
-                std::map<int, int> priority_counts;
-                for (const auto& item : priority_list) {
-                    priority_counts[item.priority]++;
-                }
-                
-                bool has_conflicts = false;
-                for (const auto& pair : priority_counts) {
-                    if (pair.second > 1) {
-                        has_conflicts = true;
-                        std::cout << RED << "  [!] Warning: Priority " << pair.first 
-                                 << " has " << pair.second << " items!" << RESET << "\n";
-                    }
-                }
-                
-                if (has_conflicts) {
-                    std::cout << YELLOW << "\n  [!] Conflicts detected! You may want to manually fix these." << RESET << "\n";
-                }
+                std::cout << GREEN << "\n  [✓] Item removed" << RESET << "\n";
             } else {
                 std::cout << RED << "\n  [✗] Removal cancelled" << RESET << "\n";
             }
-            
+
         } else if (list_choice == 2) {
             if (regular_list.empty()) {
                 std::cout << RED << "\n  [✗] Regular list is empty" << RESET << "\n";
                 pause();
                 return;
             }
-            
+
             clear_screen();
             draw_header();
             std::cout << YELLOW << "  ═══ REGULAR LIST ═══" << RESET << "\n\n";
-            
+
             for (size_t i = 0; i < regular_list.size(); i++) {
                 std::cout << "  [" << (i + 1) << "] " << regular_list[i].description << "\n";
             }
-            
+
             std::cout << YELLOW << "\n  > Select item to remove (0 to cancel): " << RESET;
             int choice;
             std::cin >> choice;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            
+
             if (choice < 1 || choice > static_cast<int>(regular_list.size())) {
                 std::cout << RED << "\n  [✗] Removal cancelled" << RESET << "\n";
                 pause();
                 return;
             }
-            
-            std::cout << RED << "\n  Remove: " << regular_list[choice - 1].description 
+
+            std::cout << RED << "\n  Remove: " << regular_list[choice - 1].description
                      << "? (y/n): " << RESET;
             char confirm;
             std::cin >> confirm;
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            
+
             if (confirm == 'y' || confirm == 'Y') {
                 regular_list.erase(regular_list.begin() + (choice - 1));
                 has_changes = true;
@@ -417,7 +376,7 @@ private:
                 std::cout << RED << "\n  [✗] Removal cancelled" << RESET << "\n";
             }
         }
-        
+
         pause();
     }
 
@@ -427,20 +386,20 @@ private:
             pause();
             return;
         }
-        
+
         clear_screen();
         draw_header();
         std::cout << YELLOW << "  ═══ COMMIT CHANGES ═══" << RESET << "\n\n";
-        
+
         std::cout << "  The following changes will be saved:\n\n";
         display_priority_list();
         display_regular_list();
-        
+
         std::cout << RED << "  Confirm commit? (y/n): " << RESET;
         char confirm;
         std::cin >> confirm;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        
+
         if (confirm == 'y' || confirm == 'Y') {
             save_to_file(priority_file, priority_list, true);
             save_to_file(regular_file, regular_list, false);
@@ -449,11 +408,12 @@ private:
         } else {
             std::cout << RED << "\n  [✗] Commit cancelled" << RESET << "\n";
         }
-        
+
         pause();
     }
 
-    void view_lists() {
+    void view_lists() const
+    {
         clear_screen();
         draw_header();
         display_priority_list();
@@ -461,17 +421,18 @@ private:
         pause();
     }
 
-    void pause() {
+    static void pause() {
         std::cout << "\n" << CYAN << "  Press ENTER to continue..." << RESET;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
-    void show_menu() {
+    void show_menu() const
+    {
         draw_separator("=");
         std::cout << CYAN << "  [1] View TODO Lists\n";
         std::cout << "  [2] Add Item\n";
         std::cout << "  [3] Remove Item\n";
-        std::cout << "  [4] " << (has_changes ? YELLOW + std::string("[*] ") + CYAN : "") 
+        std::cout << "  [4] " << (has_changes ? YELLOW + std::string("[*] ") + CYAN : "")
                   << "Commit Changes\n" << RESET;
         std::cout << CYAN << "  [5] Exit (discard uncommitted changes)\n";
         draw_separator("=");
