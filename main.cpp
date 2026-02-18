@@ -10,7 +10,7 @@
 
 #include "colors.h"
 #include "boxes.h"
-#define VERSION "v1.1.0"
+#define VERSION "v1.2.0"
 
 struct TodoItem {
     std::string description;
